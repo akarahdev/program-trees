@@ -1,5 +1,6 @@
 use crate::values::Number;
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum NumExpr {
     Constant(Number),
     Add(Box<NumExpr>, Box<NumExpr>),
@@ -16,6 +17,16 @@ impl NumExpr {
             NumExpr::Sub(left, right) => left.eval().sub(right.eval()),
             NumExpr::Mul(left, right) => left.eval().mul(right.eval()),
             NumExpr::Div(left, right) => left.eval().div(right.eval()),
+        }
+    }
+
+    pub fn priority(&self) -> i32 {
+        match self {
+            NumExpr::Constant(_) => 4,
+            NumExpr::Add(_, _) => 1,
+            NumExpr::Sub(_, _) => 1,
+            NumExpr::Mul(_, _) => 2,
+            NumExpr::Div(_, _) => 2,
         }
     }
 }

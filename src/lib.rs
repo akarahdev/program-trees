@@ -1,2 +1,13 @@
 pub mod expr;
 pub mod values;
+
+pub trait IntoBox
+where
+    Self: Sized,
+{
+    fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+}
+
+impl<T: Sized> IntoBox for T {}

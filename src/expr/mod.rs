@@ -2,6 +2,10 @@ use crate::values::ValTree;
 
 mod num;
 pub use num::*;
+mod random;
+pub use random::*;
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum ExprTree {
     Num(NumExpr),
 }
