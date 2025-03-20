@@ -1,4 +1,4 @@
-use crate::values::Number;
+use crate::{IntoBox, values::Number};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumExpr {
@@ -27,6 +27,56 @@ impl NumExpr {
             NumExpr::Sub(_, _) => 1,
             NumExpr::Mul(_, _) => 2,
             NumExpr::Div(_, _) => 2,
+        }
+    }
+
+    pub fn random(depth: i32) -> NumExpr {
+        if depth > 100 {
+            return NumExpr::Constant(Number::random());
+        }
+        match rand::random_range(1..=8) {
+            1..=4 => NumExpr::Constant(Number::new(rand::random_range(-1.0..1.0))),
+            5 => NumExpr::Add(
+                Self::random(depth + 1).boxed(),
+                Self::random(depth + 1).boxed(),
+            ),
+            6 => NumExpr::Sub(
+                Self::random(depth + 1).boxed(),
+                Self::random(depth + 1).boxed(),
+            ),
+            7 => NumExpr::Mul(
+                Self::random(depth + 1).boxed(),
+                Self::random(depth + 1).boxed(),
+            ),
+            8 => NumExpr::Div(
+                Self::random(depth + 1).boxed(),
+                Self::random(depth + 1).boxed(),
+            ),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn mutate(&mut self) {
+        match self {
+            NumExpr::Constant(number) => {
+                *number = number.add(Number::random()).mul(Number::random())
+            }
+            NumExpr::Add(num_expr, num_expr1) => {
+                num_expr.mutate();
+                num_expr1.mutate();
+            }
+            NumExpr::Sub(num_expr, num_expr1) => {
+                num_expr.mutate();
+                num_expr1.mutate();
+            }
+            NumExpr::Mul(num_expr, num_expr1) => {
+                num_expr.mutate();
+                num_expr1.mutate();
+            }
+            NumExpr::Div(num_expr, num_expr1) => {
+                num_expr.mutate();
+                num_expr1.mutate();
+            }
         }
     }
 }
