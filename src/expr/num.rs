@@ -1,4 +1,6 @@
-use crate::{IntoBox, values::Number};
+use rand::Rng;
+
+use crate::{IntoBox, random::RNG, values::Number};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumExpr {
@@ -30,52 +32,83 @@ impl NumExpr {
         }
     }
 
-    pub fn random(depth: i32) -> NumExpr {
-        if depth > 100 {
+    pub fn random<const M: i32>(depth: i32) -> NumExpr {
+        if depth > M {
             return NumExpr::Constant(Number::random());
         }
-        match rand::random_range(1..=8) {
-            1..=4 => NumExpr::Constant(Number::new(rand::random_range(-1.0..1.0))),
+        match RNG.with(|rng| rng.borrow_mut().random_range(1..=8)) {
+            1..=4 => NumExpr::Constant(Number::random()),
             5 => NumExpr::Add(
-                Self::random(depth + 1).boxed(),
-                Self::random(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
             ),
             6 => NumExpr::Sub(
-                Self::random(depth + 1).boxed(),
-                Self::random(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
             ),
             7 => NumExpr::Mul(
-                Self::random(depth + 1).boxed(),
-                Self::random(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
             ),
             8 => NumExpr::Div(
-                Self::random(depth + 1).boxed(),
-                Self::random(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
+                Self::random::<M>(depth + 1).boxed(),
             ),
             _ => unimplemented!(),
         }
     }
 
-    pub fn mutate(&mut self) {
+    pub fn mutated(self) -> NumExpr {
         match self {
-            NumExpr::Constant(number) => {
-                *number = number.add(Number::random()).mul(Number::random())
-            }
+            NumExpr::Constant(number) => match RNG.with(|rng| rng.borrow_mut().random_range(1..=4))
+            {
+                1 => self,
+                2 => NumExpr::Constant(number.add(Number::random()).mul(Number::random())),
+                3 => NumExpr::Add(
+                    NumExpr::Constant(number).boxed(),
+                    NumExpr::Constant(number).boxed(),
+                ),
+                4 => NumExpr::Mul(
+                    NumExpr::Constant(number).boxed(),
+                    NumExpr::Constant(number).boxed(),
+                ),
+                _ => unreachable!(),
+            },
             NumExpr::Add(num_expr, num_expr1) => {
-                num_expr.mutate();
-                num_expr1.mutate();
+                match RNG.with(|rng| rng.borrow_mut().random_range(1..=4)) {
+                    1 => NumExpr::Add(num_expr, num_expr1),
+                    2 => NumExpr::Add(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    3 => NumExpr::Sub(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    4 => NumExpr::Constant(Number::random()),
+                    _ => unreachable!(),
+                }
             }
             NumExpr::Sub(num_expr, num_expr1) => {
-                num_expr.mutate();
-                num_expr1.mutate();
+                match RNG.with(|rng| rng.borrow_mut().random_range(1..=4)) {
+                    1 => NumExpr::Sub(num_expr, num_expr1),
+                    2 => NumExpr::Sub(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    3 => NumExpr::Add(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    4 => NumExpr::Constant(Number::random()),
+                    _ => unreachable!(),
+                }
             }
             NumExpr::Mul(num_expr, num_expr1) => {
-                num_expr.mutate();
-                num_expr1.mutate();
+                match RNG.with(|rng| rng.borrow_mut().random_range(1..=4)) {
+                    1 => NumExpr::Mul(num_expr, num_expr1),
+                    2 => NumExpr::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    3 => NumExpr::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    4 => NumExpr::Constant(Number::random()),
+                    _ => unreachable!(),
+                }
             }
             NumExpr::Div(num_expr, num_expr1) => {
-                num_expr.mutate();
-                num_expr1.mutate();
+                match RNG.with(|rng| rng.borrow_mut().random_range(1..=4)) {
+                    1 => NumExpr::Div(num_expr, num_expr1),
+                    2 => NumExpr::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    3 => NumExpr::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
+                    4 => NumExpr::Constant(Number::random()),
+                    _ => unreachable!(),
+                }
             }
         }
     }

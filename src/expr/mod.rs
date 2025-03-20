@@ -1,7 +1,8 @@
-use crate::values::ValTree;
+use crate::{random::RNG, values::ValTree};
 
 mod num;
 pub use num::*;
+use rand::Rng;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprTree {
@@ -15,16 +16,16 @@ impl ExprTree {
         }
     }
 
-    pub fn random_expr() -> ExprTree {
-        match rand::random_range(1..=1) {
-            1 => ExprTree::Num(NumExpr::random(0)),
+    pub fn random_expr<const M: i32>() -> ExprTree {
+        match RNG.with(|rng| rng.borrow_mut().random_range(1..=1)) {
+            1 => ExprTree::Num(NumExpr::random::<M>(0)),
             _ => unimplemented!(),
         }
     }
 
-    pub fn mutate(&mut self) {
+    pub fn mutated(self) -> Self {
         match self {
-            ExprTree::Num(num_expr) => num_expr.mutate(),
+            ExprTree::Num(num_expr) => ExprTree::Num(num_expr.mutated()),
         }
     }
 }

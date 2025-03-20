@@ -1,3 +1,7 @@
+use rand::Rng;
+
+use crate::random::RNG;
+
 #[derive(Clone, Copy, PartialEq)]
 pub struct Number {
     inner: f64,
@@ -13,7 +17,7 @@ impl Number {
     }
 
     pub fn random() -> Self {
-        Number::new(rand::random_range(-1.0..1.0))
+        Number::new(RNG.with(|rng| rng.borrow_mut().random_range(-1.0..1.0)))
     }
 
     pub fn add(&self, other: Number) -> Number {
