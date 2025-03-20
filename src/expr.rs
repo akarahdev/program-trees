@@ -2,14 +2,14 @@ use rand::Rng;
 
 use crate::{
     IntoBox,
-    random::RNG,
-    values::{Number, ValTree},
+    random::{F64Random, RNG},
+    values::ValTree,
 };
 
 #[derive(Clone, PartialEq)]
 pub enum ExprTree {
     Index(usize),
-    Constant(Number),
+    Constant(ValTree),
     Add(Box<ExprTree>, Box<ExprTree>),
     Sub(Box<ExprTree>, Box<ExprTree>),
     Mul(Box<ExprTree>, Box<ExprTree>),
@@ -20,13 +20,10 @@ pub enum ExprTree {
 impl ExprTree {
     pub fn eval(&self, input: &[ValTree]) -> ValTree {
         match self {
-            ExprTree::Index(idx) => ValTree::Number(
-                input
-                    .get(*idx)
-                    .map(|x| Number::new(x.as_f64()))
-                    .unwrap_or(Number::new(0.0)),
-            ),
-            ExprTree::Constant(number) => ValTree::Number(*number),
+            ExprTree::Index(idx) => {
+                ValTree::Number(input.get(*idx).map(|x| x.as_number()).unwrap_or(0.0))
+            }
+            ExprTree::Constant(value) => value.clone(),
             ExprTree::Add(left, right) => left.eval(input).add(right.eval(input)),
             ExprTree::Sub(left, right) => left.eval(input).sub(right.eval(input)),
             ExprTree::Mul(left, right) => left.eval(input).mul(right.eval(input)),
@@ -49,10 +46,10 @@ impl ExprTree {
 
     pub fn random<const M: i32>(depth: i32) -> ExprTree {
         if depth > M {
-            return ExprTree::Constant(Number::random());
+            return ExprTree::Constant(ValTree::Number(f64::random()));
         }
         match RNG.with(|rng| rng.borrow_mut().random_range(1..=9)) {
-            1..=4 => ExprTree::Constant(Number::random()),
+            1..=4 => ExprTree::Constant(ValTree::Number(f64::random())),
             5 => ExprTree::Add(
                 Self::random::<M>(depth + 1).boxed(),
                 Self::random::<M>(depth + 1).boxed(),
@@ -83,14 +80,18 @@ impl ExprTree {
             },
             ExprTree::Constant(number) => {
                 match RNG.with(|rng| rng.borrow_mut().random_range(1..=4)) {
-                    1 => self,
-                    2 => ExprTree::Constant(number.add(Number::random()).mul(Number::random())),
+                    1 => ExprTree::Constant(number),
+                    2 => ExprTree::Constant(
+                        number
+                            .add(ValTree::Number(f64::random()))
+                            .mul(ValTree::Number(f64::random())),
+                    ),
                     3 => ExprTree::Add(
-                        ExprTree::Constant(number).boxed(),
+                        ExprTree::Constant(number.clone()).boxed(),
                         ExprTree::Constant(number).boxed(),
                     ),
                     4 => ExprTree::Mul(
-                        ExprTree::Constant(number).boxed(),
+                        ExprTree::Constant(number.clone()).boxed(),
                         ExprTree::Constant(number).boxed(),
                     ),
                     _ => unreachable!(),
@@ -103,7 +104,7 @@ impl ExprTree {
                     3 => ExprTree::Sub(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     4 => ExprTree::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     5 => ExprTree::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
-                    6 => ExprTree::Constant(Number::random()),
+                    6 => ExprTree::Constant(ValTree::Number(f64::random())),
                     _ => unreachable!(),
                 }
             }
@@ -115,7 +116,7 @@ impl ExprTree {
                     4 => ExprTree::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     5 => ExprTree::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     6 => ExprTree::Pow(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
-                    7 => ExprTree::Constant(Number::random()),
+                    7 => ExprTree::Constant(ValTree::Number(f64::random())),
                     _ => unreachable!(),
                 }
             }
@@ -127,7 +128,7 @@ impl ExprTree {
                     4 => ExprTree::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     5 => ExprTree::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     6 => ExprTree::Pow(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
-                    7 => ExprTree::Constant(Number::random()),
+                    7 => ExprTree::Constant(ValTree::Number(f64::random())),
                     _ => unreachable!(),
                 }
             }
@@ -139,7 +140,7 @@ impl ExprTree {
                     4 => ExprTree::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     5 => ExprTree::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     6 => ExprTree::Pow(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
-                    7 => ExprTree::Constant(Number::random()),
+                    7 => ExprTree::Constant(ValTree::Number(f64::random())),
                     _ => unreachable!(),
                 }
             }
@@ -151,7 +152,7 @@ impl ExprTree {
                     4 => ExprTree::Mul(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     5 => ExprTree::Div(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
                     6 => ExprTree::Pow(num_expr.mutated().boxed(), num_expr1.mutated().boxed()),
-                    7 => ExprTree::Constant(Number::random()),
+                    7 => ExprTree::Constant(ValTree::Number(f64::random())),
                     _ => unreachable!(),
                 }
             }
@@ -226,25 +227,25 @@ impl std::fmt::Debug for ExprTree {
 
 #[cfg(test)]
 mod tests {
-    use crate::values::{Number, ValTree};
+    use crate::values::ValTree;
 
     use super::ExprTree;
 
     #[test]
     pub fn test_add_expr() {
         let expr = ExprTree::Add(
-            Box::new(ExprTree::Constant(Number::new(10.0))),
-            Box::new(ExprTree::Constant(Number::new(20.0))),
+            Box::new(ExprTree::Constant(ValTree::Number(10.0))),
+            Box::new(ExprTree::Constant(ValTree::Number(20.0))),
         );
-        assert_eq!(expr.eval(&[]), ValTree::Number(Number::new(30.0)));
+        assert_eq!(expr.eval(&[]), ValTree::Number(30.0));
     }
 
     #[test]
     pub fn test_sub_expr() {
         let expr = ExprTree::Sub(
-            Box::new(ExprTree::Constant(Number::new(10.0))),
-            Box::new(ExprTree::Constant(Number::new(40.0))),
+            Box::new(ExprTree::Constant(ValTree::Number(10.0))),
+            Box::new(ExprTree::Constant(ValTree::Number(40.0))),
         );
-        assert_eq!(expr.eval(&[]), ValTree::Number(Number::new(-30.0)));
+        assert_eq!(expr.eval(&[]), ValTree::Number(-30.0));
     }
 }

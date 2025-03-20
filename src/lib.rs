@@ -1,5 +1,3 @@
-#![feature(thread_local)]
-
 pub mod evolution;
 pub mod expr;
 pub mod random;

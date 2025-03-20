@@ -77,25 +77,25 @@ impl<const S: usize, const F: usize, const M: i32> Default for Universe<S, F, M>
 #[cfg(test)]
 mod tests {
 
-    use crate::values::{Number, ValTree};
+    use crate::values::ValTree;
 
     use super::Universe;
 
     #[test]
-    pub fn approximate_sqrt() {
-        let mut universe: Universe<100, 5, 2> = Universe::default();
+    pub fn approximate_acos() {
+        let mut universe: Universe<1000, 50, 2> = Universe::default();
         let mut last_best = 0.0;
         loop {
             universe = universe.step(|expr| {
-                let test_values: [f64; 128] = std::array::from_fn(|idx| idx as f64);
+                let test_values: [f64; 128] =
+                    std::array::from_fn(|idx| ((idx as f64) / 128.0) - 0.5);
 
                 let result: f64 = test_values
                     .iter()
                     .map(|&x| {
-                        let expected = x.sqrt();
-                        let candidate_result =
-                            expr.eval(&[ValTree::Number(Number::new(x))]).as_f64();
-                        let error = (expected - candidate_result).abs();
+                        let expected = x.acos();
+                        let candidate_result = expr.eval(&[ValTree::Number(x)]).as_number();
+                        let error = (expected - candidate_result).abs() * 100.0;
                         1.0 / (1.0 + error)
                     })
                     .sum();
