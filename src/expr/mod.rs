@@ -10,9 +10,9 @@ pub enum ExprTree {
 }
 
 impl ExprTree {
-    pub fn eval(&self) -> ValTree {
+    pub fn eval(&self, input: &[ValTree]) -> ValTree {
         match self {
-            ExprTree::Num(expr) => ValTree::Number(expr.eval()),
+            ExprTree::Num(expr) => ValTree::Number(expr.eval(input)),
         }
     }
 
