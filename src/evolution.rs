@@ -18,7 +18,7 @@ impl<const S: usize, const F: usize, const M: i32> Universe<S, F, M> {
     pub fn new() -> Self {
         Universe {
             members: std::array::from_fn(|_| UniverseMember {
-                tree: ExprTree::random_expr::<M>(),
+                tree: ExprTree::random::<M>(0),
                 fitness: 0.0.into(),
             }),
         }
@@ -60,7 +60,7 @@ impl<const S: usize, const F: usize, const M: i32> Universe<S, F, M> {
             .take(F);
         self.members = std::array::from_fn(|_| {
             new_members.next().unwrap_or_else(|| UniverseMember {
-                tree: ExprTree::random_expr::<3>(),
+                tree: ExprTree::random::<3>(0),
                 fitness: 0.0.into(),
             })
         });
@@ -76,6 +76,7 @@ impl<const S: usize, const F: usize, const M: i32> Default for Universe<S, F, M>
 
 #[cfg(test)]
 mod tests {
+
     use crate::values::{Number, ValTree};
 
     use super::Universe;
@@ -83,9 +84,10 @@ mod tests {
     #[test]
     pub fn approximate_sqrt() {
         let mut universe: Universe<100, 5, 2> = Universe::default();
+        let mut last_best = 0.0;
         loop {
             universe = universe.step(|expr| {
-                let test_values: [f64; 6] = [1.0, 4.0, 9.0, 16.0, 25.0, 100.0];
+                let test_values: [f64; 128] = std::array::from_fn(|idx| idx as f64);
 
                 let result: f64 = test_values
                     .iter()
@@ -99,8 +101,14 @@ mod tests {
                     .sum();
                 if result.is_nan() { 0.0 } else { result }
             });
-            println!("Generation best: {:#?}", universe.members[0].fitness);
-            println!("{:?}", universe.members[0].tree);
+
+            let new_curr = universe.members[0].fitness;
+
+            if new_curr != last_best {
+                println!("Best: {:?}", universe.members[0].fitness);
+                println!("{:?}", universe.members[0].tree);
+                last_best = *new_curr;
+            }
         }
     }
 }

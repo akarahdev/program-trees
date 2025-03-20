@@ -43,6 +43,12 @@ impl Number {
             inner: self.inner / other.inner,
         }
     }
+
+    pub fn pow(&self, other: Number) -> Number {
+        Number {
+            inner: self.inner.powf(other.inner),
+        }
+    }
 }
 
 impl std::fmt::Debug for Number {
